@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "1.1";
+var APP_V = "1.2";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -94,7 +94,7 @@ function render(){
   } else if(tab==="cal"){
     ttl.textContent="奏祐カレンダー"; sub.textContent="自学は『休みの日』だけ。休みで未作成の日は赤い点線";
     m.innerHTML=banner()+'<div class="card"><div style="display:flex;align-items:center;justify-content:space-between"><button class="sec" id="pm" style="width:52px;padding:8px">◀</button><div class="h" id="mt" style="margin:0"></div><button class="sec" id="nm" style="width:52px;padding:8px">▶</button></div><div id="cg" style="margin-top:10px"></div><div class="sub" style="margin-top:8px">休＝土日・祝日・休校などの休みの日　📄作成ずみ　📷写真　✅記録</div></div><div class="card" id="cd"><div class="sub">日付をタップすると、くわしく出ます</div></div>';
-    var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);var st={made:[],photos:[],records:[]},evs={},calOk=null;
+    var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);var st={made:[],photos:[],records:[]},evs={},calOk=null;var sel="",selW=0;
     function ymd(y,mo,d){return y+"-"+("0"+(mo+1)).slice(-2)+"-"+("0"+d).slice(-2)}
     var OFF=/休校|休み|代休|振替休|休業|県民の日/;
     function isOff(k,w){if(w==0||w==6)return true;return (evs[k]||[]).some(function(e){return e.kind==="holiday"||OFF.test(e.title)})}
@@ -105,33 +105,35 @@ function render(){
       for(var i=0;i<first;i++)h+="<div></div>";
       for(var d=1;d<=days;d++){
         var k=ymd(y,mo,d),w=(first+d-1)%7,off=isOff(k,w),mk=st.made.indexOf(k)>=0,ph=st.photos.indexOf(k)>=0,rc=st.records.indexOf(k)>=0;
-        var bd=k===t?"2px solid var(--blue)":(off&&!mk?"1px dashed #f2a099":"1px solid #eee");
+        var bd=k===sel?"3px solid #e91e63":(k===t?"2px solid var(--blue)":(off&&!mk?"1px dashed #f2a099":"1px solid #eee"));
         var mark=off?('<span style="color:'+(mk?"#9aa0a6":"#d93025")+';font-weight:800">休</span>'+(mk?"📄":"")+(ph?"📷":"")+(rc?"✅":"")):"";
-        h+='<div data-k="'+k+'" data-w="'+w+'" style="border:'+bd+';border-radius:8px;padding:3px 0;min-height:52px;background:'+(off&&mk?"#e8f0fe":"#fff")+'"><div style="font-weight:800;color:'+(w==0?"var(--red)":w==6?"var(--blue)":"var(--ink)")+'">'+d+'</div><div style="font-size:11px;line-height:1.2">'+mark+'</div></div>';
+        h+='<div data-k="'+k+'" data-w="'+w+'" style="border:'+bd+';border-radius:8px;padding:3px 0;min-height:52px;background:'+(k===sel?"#fde7f0":(off&&mk?"#e8f0fe":"#fff"))+'"><div style="font-weight:800;color:'+(w==0?"var(--red)":w==6?"var(--blue)":"var(--ink)")+'">'+d+'</div><div style="font-size:11px;line-height:1.2">'+mark+'</div></div>';
       }
       document.getElementById("cg").innerHTML=h+"</div>";
-      Array.prototype.forEach.call(document.querySelectorAll("#cg [data-k]"),function(el){el.onclick=function(){
-        var k=el.getAttribute("data-k"),w=Number(el.getAttribute("data-w")),off=isOff(k,w),a=[];
-        var es=(evs[k]||[]).filter(function(e){return !/Meet\)?$/.test(e.title)});
-        if(es.length)a.push('<b>カレンダー</b><br>'+es.slice(0,8).map(function(e){return esc((e.time?e.time+" ":"")+e.title)}).join("<br>")+(es.length>8?"<br>ほか"+(es.length-8)+"件":""));
-        if(off){
-          a.push(st.made.indexOf(k)>=0?"📄 自学プリントは、作成ずみです（「答え」で見られます）":"📄 休みの日です。自学プリントは、まだ作っていません");
-          if(st.photos.indexOf(k)>=0)a.push("📷 写真が保存されています");
-          if(st.records.indexOf(k)>=0)a.push("✅ 答え合わせの記録があります");
-        }
-        if(calOk===false)a.push('<span class="sub">（カレンダーはまだ読み込めていません）</span>');
-        document.getElementById("cd").innerHTML='<div class="h">'+esc(k)+(off?"（休みの日）":"")+'</div><div style="line-height:1.8;font-size:14px">'+(a.join("<br><br>")||'<span class="sub">予定はありません</span>')+'</div>';
-      }});
+      Array.prototype.forEach.call(document.querySelectorAll("#cg [data-k]"),function(el){el.onclick=function(){sel=el.getAttribute("data-k");selW=Number(el.getAttribute("data-w"));grid();detail()}});
+    }
+    function detail(){
+      if(!sel)return;
+      var k=sel,w=selW,off=isOff(k,w),a=[];
+      var es=(evs[k]||[]).filter(function(e){return !/Meet\)?$/.test(e.title)});
+      if(es.length)a.push('<b>カレンダー</b><br>'+es.slice(0,8).map(function(e){return esc((e.time?e.time+" ":"")+e.title)}).join("<br>")+(es.length>8?"<br>ほか"+(es.length-8)+"件":""));
+      if(off){
+        a.push(st.made.indexOf(k)>=0?"📄 自学プリントは、作成ずみです（「答え」で見られます）":"📄 休みの日です。自学プリントは、まだ作っていません");
+        if(st.photos.indexOf(k)>=0)a.push("📷 写真が保存されています");
+        if(st.records.indexOf(k)>=0)a.push("✅ 答え合わせの記録があります");
+      }
+      if(calOk===false)a.push('<span class="sub">（カレンダーはまだ読み込めていません）</span>');
+      document.getElementById("cd").innerHTML='<div class="h">'+esc(k)+(off?"（休みの日）":"")+'</div><div style="line-height:1.8;font-size:14px">'+(a.join("<br><br>")||'<span class="sub">予定はありません</span>')+'</div>';
     }
     function load(){
       grid();
       if(demo)return;
       var y=cur.getFullYear(),mo=cur.getMonth(),nx=new Date(y,mo+1,1);
-      api("status").then(function(r){if(r&&r.ok){st=r;grid()}});
+      api("status").then(function(r){if(r&&r.ok){st=r;grid();detail()}});
       api("calendar",{from:ymd(y,mo,1),to:ymd(nx.getFullYear(),nx.getMonth(),1)}).then(function(r){
         calOk=!!(r&&r.ok);
         if(r&&r.ok){(r.events||[]).forEach(function(e){(evs[e.date]=evs[e.date]||[]).push(e)})}
-        grid();
+        grid();detail();
       });
     }
     document.getElementById("pm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);load()};
