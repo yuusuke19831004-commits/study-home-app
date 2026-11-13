@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "0.9";
+var APP_V = "1.0";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -106,7 +106,7 @@ function render(){
       for(var d=1;d<=days;d++){
         var k=ymd(y,mo,d),w=(first+d-1)%7,off=isOff(k,w),mk=st.made.indexOf(k)>=0,ph=st.photos.indexOf(k)>=0,rc=st.records.indexOf(k)>=0;
         var bd=k===t?"2px solid var(--blue)":(off&&!mk?"1px dashed #f2a099":"1px solid #eee");
-        var mark=off?((mk?"📄":"")+(ph?"📷":"")+(rc?"✅":"")+(!mk?'<span style="color:#d93025;font-weight:800">休</span>':"")):"";
+        var mark=off?('<span style="color:'+(mk?"#9aa0a6":"#d93025")+';font-weight:800">休</span>'+(mk?"📄":"")+(ph?"📷":"")+(rc?"✅":"")):"";
         h+='<div data-k="'+k+'" data-w="'+w+'" style="border:'+bd+';border-radius:8px;padding:3px 0;min-height:52px;background:'+(off&&mk?"#e8f0fe":"#fff")+'"><div style="font-weight:800;color:'+(w==0?"var(--red)":w==6?"var(--blue)":"var(--ink)")+'">'+d+'</div><div style="font-size:11px;line-height:1.2">'+mark+'</div></div>';
       }
       document.getElementById("cg").innerHTML=h+"</div>";
