@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="奏祐ホーム">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>奏祐ホーム</title>
+<style>
+:root{--blue:#1a73e8;--yel:#f9ab00;--red:#d93025;--green:#188038;--bg:#f1f3f4;--ink:#202124;--sub:#5f6368}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;padding-bottom:84px}
+header{background:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;position:sticky;top:0;z-index:5;box-shadow:0 1px 2px #0002}
+h1{font-size:22px;margin:0}.sub{font-size:12.5px;color:var(--sub)}
+main{padding:12px;display:flex;flex-direction:column;gap:12px}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 1px 2px #0002}
+.h{font-weight:800;font-size:15px;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #eee;font-size:15px}.row:first-of-type{border-top:0}
+.tag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:10px;color:#fff;margin-left:auto;white-space:nowrap}
+.b{background:var(--blue)}.y{background:var(--yel);color:#3c2e00}.r{background:var(--red)}.g{background:#9aa0a6}
+.bar{height:12px;border-radius:6px;background:#e3e6ea;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;border-radius:6px}
+button{font:inherit;border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:800;color:#fff;background:var(--blue);width:100%}
+button.sec{background:#e8eaed;color:var(--ink)}button:disabled{opacity:.45}
+.mk{display:flex;gap:6px;margin-left:auto}.mk button{width:44px;height:44px;border-radius:50%;padding:0;font-size:19px;background:#fff;color:#9aa0a6;border:2px solid #cfd3d8}
+.mk button.on0{background:var(--blue);border-color:var(--blue);color:#fff}.mk button.on1{background:var(--yel);border-color:var(--yel);color:#3c2e00}.mk button.on2{background:var(--red);border-color:var(--red);color:#fff}
+textarea,input{font:inherit;width:100%;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:16px}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;display:flex;padding:6px 0 calc(env(safe-area-inset-bottom) + 6px)}
+nav a{flex:1;text-align:center;font-size:11px;color:var(--sub);padding:4px 0}nav a b{display:block;font-size:21px}nav a.on{color:var(--blue);font-weight:800}
+.banner{background:#fff4e5;border:1px solid #f9ab00;border-radius:12px;padding:10px 12px;font-size:13px;color:#5f4300}
+</style>
+</head>
+<body>
+<header><h1 id="ttl">奏祐ホーム</h1><div class="sub" id="sub"></div></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<script>
+"use strict";
+var LS = {get:function(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+var cfg = {url: LS.get("sh_url"), token: LS.get("sh_token"), who: LS.get("sh_who")};
+var demo = !(cfg.url && cfg.token);
+var tab = "home";
+
+/* ---------- デモ用のサンプル（本物のデータではありません） ---------- */
+var DEMO = {
+  understanding: [
+    {"科目":"算数","単元":"サンプル単元A","★":3,"確認状態":"要確認"},
+    {"科目":"算数","単元":"サンプル単元B","★":2.5,"確認状態":"要確認"},
+    {"科目":"算数","単元":"サンプル単元C","★":3,"確認状態":"要確認"},
+    {"科目":"漢字","単元":"サンプル単元D","★":2,"確認状態":"要確認"}],
+  plan: [
+    {"番号":"①","内容":"サンプル問題1"},{"番号":"②","内容":"サンプル問題2"},{"番号":"③","内容":"サンプル問題3"}]
+};
+
+function api(action, extra){
+  if(demo) return Promise.resolve({ok:true, rows: DEMO[action]||[]});
+  var body = Object.assign({action:action, token:cfg.token}, extra||{});
+  return fetch(cfg.url, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body)})
+    .then(function(r){return r.json()}).catch(function(){return {ok:false,error:"net"}});
+}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function today(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
+function tagOf(s){return /要確認|注意/.test(s)?"y":/満点|OK|済/.test(s)?"b":"g"}
+function banner(){return demo?'<div class="banner">デモ表示です（サンプルの数字。まだ本物のデータにつながっていません）</div>':""}
+
+function nav(){
+  var t=[["home","🏠","ホーム"],["und","📊","理解度"],["rec","📝","記録"],["more","⋯","もっと"]];
+  document.getElementById("nav").innerHTML=t.map(function(x){return '<a href="#" data-t="'+x[0]+'" class="'+(tab===x[0]?"on":"")+'"><b>'+x[1]+'</b>'+x[2]+'</a>'}).join("");
+  Array.prototype.forEach.call(document.querySelectorAll("nav a"),function(a){a.onclick=function(e){e.preventDefault();tab=a.getAttribute("data-t");render()}});
+}
+function render(){
+  nav();
+  var m=document.getElementById("main"), ttl=document.getElementById("ttl"), sub=document.getElementById("sub");
+  if(tab==="home"){
+    ttl.textContent="奏祐ホーム"; sub.textContent=today();
+    m.innerHTML=banner()+'<div class="card"><div class="h">次の自習学習</div><div class="sub">金曜に依頼 → 出題レビュー → Go → PDF → 印刷</div></div><div class="card"><div class="h">いま気をつけたいところ</div><div id="warn">読み込み中…</div></div>';
+    api("understanding").then(function(r){
+      var rows=(r.rows||[]).filter(function(x){return /要確認/.test(x["確認状態"])});
+      document.getElementById("warn").innerHTML=r.ok?(rows.map(function(x){return '<div class="row">'+esc(x["単元"])+'<span class="tag y">'+esc(x["確認状態"])+'</span></div>'}).join("")||'<div class="sub">いまは特にありません</div>'):'<div class="sub">読み込めませんでした（「もっと」で接続を確認）</div>';
+    });
+  } else if(tab==="und"){
+    ttl.textContent="理解度"; sub.textContent="★1〜5（暫定）。単発の結果では決めません";
+    m.innerHTML=banner()+'<div class="card" id="und">読み込み中…</div>';
+    api("understanding").then(function(r){
+      var by={};(r.rows||[]).forEach(function(x){(by[x["科目"]]=by[x["科目"]]||[]).push(x)});
+      var h=Object.keys(by).map(function(k){return '<div class="h" style="margin-top:8px">'+esc(k)+'</div>'+by[k].map(function(x){
+        var s=Number(x["★"])||0,c=/要確認/.test(x["確認状態"])?"var(--yel)":"var(--blue)";
+        return '<div class="row" style="display:block"><div style="display:flex;align-items:center">'+esc(x["単元"])+'<span class="tag '+tagOf(x["確認状態"])+'">'+esc(x["確認状態"])+'</span></div><div class="bar"><i style="width:'+(s/5*100)+'%;background:'+c+'"></i></div></div>'}).join("")}).join("");
+      document.getElementById("und").innerHTML=r.ok?(h||'<div class="sub">データがありません</div>'):'<div class="sub">読み込めませんでした</div>';
+    });
+  } else if(tab==="rec"){
+    ttl.textContent="答え合わせの記録"; sub.textContent="直させる前の状態で、○△×をタップ";
+    m.innerHTML=banner()+'<div class="card"><button disabled>📷 ノートを撮影する（次の段階）</button></div><div class="card" id="plan">読み込み中…</div><div class="card"><div class="h">ひとこと</div><textarea id="memo" rows="3" placeholder="どこで迷っていた？"></textarea></div><button id="save">保存する</button><div class="sub" id="msg" style="text-align:center"></div>';
+    var sel={};
+    api("plan",{date:today()}).then(function(r){
+      var rows=r.rows||[];
+      document.getElementById("plan").innerHTML='<div class="h">問題ごとの結果</div>'+(rows.length?rows.map(function(x,i){return '<div class="row">'+esc(x["番号"])+" "+esc(x["内容"])+'<div class="mk" data-i="'+i+'"><button data-v="0">○</button><button data-v="1">△</button><button data-v="2">×</button></div></div>'}).join(""):'<div class="sub">今日の問題はまだ登録されていません</div>');
+      Array.prototype.forEach.call(document.querySelectorAll(".mk button"),function(b){b.onclick=function(){var i=b.parentNode.getAttribute("data-i");sel[i]=Number(b.getAttribute("data-v"));Array.prototype.forEach.call(b.parentNode.children,function(c){c.className=""});b.className="on"+sel[i]}});
+      document.getElementById("save").onclick=function(){
+        var items=Object.keys(sel).map(function(i){return {no:rows[i]["番号"],result:["○","△","×"][sel[i]],memo:document.getElementById("memo").value}});
+        var msg=document.getElementById("msg");
+        if(!items.length){msg.textContent="○△×を選んでください";return}
+        if(demo){msg.textContent="デモなので保存しません（接続すると保存されます）";return}
+        api("addRecord",{date:today(),items:items,who:cfg.who}).then(function(r){msg.textContent=r.ok?"保存しました":"保存できませんでした"});
+      };
+    });
+  } else {
+    ttl.textContent="もっと"; sub.textContent="接続の設定";
+    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="合言葉" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px"></div></div>';
+    document.getElementById("go").onclick=function(){
+      var u=document.getElementById("u").value.trim(),t=document.getElementById("t").value.trim()||cfg.token;
+      LS.set("sh_url",u);LS.set("sh_token",t);LS.set("sh_who",document.getElementById("w").value.trim());
+      cfg={url:u,token:t,who:LS.get("sh_who")};demo=!(cfg.url&&cfg.token);
+      api("ping").then(function(r){document.getElementById("cm").textContent=r.ok?"つながりました":"つながりません（URLか合言葉をご確認ください）"});
+    };
+  }
+}
+render();
+</script>
+</body>
+</html>
