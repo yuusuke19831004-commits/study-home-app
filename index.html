@@ -109,29 +109,35 @@ function render(){
       };
     });
   } else if(tab==="pho"){
-    ttl.textContent="写真を保存"; sub.textContent="自学のノート（答え合わせの後）／学校のテストを撮影";
-    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学ノート</button><button class="sec" id="k2" style="flex:1">学校のテスト</button></div><div style="height:10px"></div><div class="h">日付</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">ひとこと（科目・単元など）</div><input id="pn" placeholder="例：算数 がい数"></div><div class="card"><input id="pf" type="file" accept="image/*" capture="environment" style="display:none"><button id="pc" style="background:#188038">📷 撮影する／写真を選ぶ</button><div id="pv" style="margin-top:10px"></div></div><button id="ps" disabled>保存する</button><div class="sub" id="pm" style="text-align:center"></div>';
-    var kind="note",b64="";
-    function setKind(k){kind=k;document.getElementById("k1").style.background=k==="note"?"var(--blue)":"";document.getElementById("k1").style.color=k==="note"?"#fff":"";document.getElementById("k2").style.background=k==="test"?"var(--blue)":"";document.getElementById("k2").style.color=k==="test"?"#fff":""}
-    setKind("note");
-    document.getElementById("k1").onclick=function(){setKind("note")};document.getElementById("k2").onclick=function(){setKind("test")};
-    document.getElementById("pc").onclick=function(){document.getElementById("pf").click()};
-    document.getElementById("pf").onchange=function(){
-      var f=this.files&&this.files[0];if(!f)return;
-      shrink(f,1800).then(function(d){b64=d;document.getElementById("pv").innerHTML='<img style="width:100%;border-radius:10px" src="data:image/jpeg;base64,'+d+'">';document.getElementById("ps").disabled=false},function(){document.getElementById("pm").textContent="写真を読み込めませんでした"});
-    };
+    ttl.textContent="写真を保存"; sub.textContent="自学は『プリント＋ノート』をいっしょに保存";
+    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">学校のテスト</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">ひとこと（任意）</div><input id="pn" placeholder="例：算数 がい数"></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
+    var kind="study",files={};
+    var PARTS={study:[["print","① 自学プリント（問題）"],["note","② 自学ノート（奏祐の答え）"]],test:[["front","① テスト（表）"],["back","② テスト（裏）"]]};
+    function paint(){
+      var k1=document.getElementById("k1"),k2=document.getElementById("k2");
+      k1.style.background=kind==="study"?"var(--blue)":"";k1.style.color=kind==="study"?"#fff":"";
+      k2.style.background=kind==="test"?"var(--blue)":"";k2.style.color=kind==="test"?"#fff":"";
+      document.getElementById("slots").innerHTML=PARTS[kind].map(function(p){var has=!!files[p[0]];
+        return '<div class="card"><div class="h">'+p[1]+(has?' ✅':'')+'</div><input type="file" accept="image/*" capture="environment" data-p="'+p[0]+'" style="display:none"><button class="'+(has?"sec":"")+'" data-c="'+p[0]+'" style="background:'+(has?"":"#188038")+'">📷 '+(has?"撮りなおす":"撮影する／写真を選ぶ")+'</button>'+(has?'<img style="width:100%;border-radius:10px;margin-top:10px" src="data:image/jpeg;base64,'+files[p[0]]+'">':"")+'</div>'}).join("");
+      Array.prototype.forEach.call(document.querySelectorAll("#slots button"),function(b){b.onclick=function(){document.querySelector('#slots input[data-p="'+b.getAttribute("data-c")+'"]').click()}});
+      Array.prototype.forEach.call(document.querySelectorAll("#slots input"),function(inp){inp.onchange=function(){var f=inp.files&&inp.files[0],p=inp.getAttribute("data-p");if(!f)return;shrink(f,1800).then(function(d){files[p]=d;paint()},function(){document.getElementById("pm").textContent="写真を読み込めませんでした"})}});
+      document.getElementById("ps").disabled=!Object.keys(files).length;
+    }
+    document.getElementById("k1").onclick=function(){kind="study";files={};paint()};document.getElementById("k2").onclick=function(){kind="test";files={};paint()};
+    paint();
     document.getElementById("ps").onclick=function(){
       var btn=this,msg=document.getElementById("pm");
       if(demo){msg.textContent="デモなので保存しません（接続すると保存されます）";return}
-      btn.disabled=true;msg.textContent="保存中…";
-      api("uploadPhoto",{kind:kind,date:document.getElementById("pd").value,note:document.getElementById("pn").value,data:b64,who:cfg.who}).then(function(r){
-        msg.textContent=r.ok?"保存しました（"+esc(r.name||"")+"）":"保存できませんでした";
-        if(r.ok){b64="";document.getElementById("pv").innerHTML="";document.getElementById("pf").value=""}else{btn.disabled=false}
+      var keys=Object.keys(files),setId=String(Date.now()).slice(-8),done=0,fail=0;
+      btn.disabled=true;msg.textContent="保存中…（"+keys.length+"枚）";
+      keys.reduce(function(pr,pk){return pr.then(function(){return api("uploadPhoto",{kind:kind,part:pk,set:setId,date:document.getElementById("pd").value,note:document.getElementById("pn").value,data:files[pk],who:cfg.who}).then(function(r){if(r.ok)done++;else fail++})})},Promise.resolve()).then(function(){
+        msg.textContent=fail?("一部保存できませんでした（成功"+done+"枚・失敗"+fail+"枚）"):("保存しました（"+done+"枚）");
+        if(!fail){files={};paint();btn.disabled=true}else{btn.disabled=false}
       });
     };
   } else {
     ttl.textContent="もっと"; sub.textContent="接続の設定";
-    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：0.4（写真タブあり）</div>';
+    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：0.5（プリント＋ノートをまとめて保存）</div>';
     document.getElementById("go").onclick=function(){
       var u=document.getElementById("u").value.trim(),t=document.getElementById("t").value.trim()||cfg.token;
       LS.set("sh_url",u);LS.set("sh_token",t);LS.set("sh_who",document.getElementById("w").value.trim());
