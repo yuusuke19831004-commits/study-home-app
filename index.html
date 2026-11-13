@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "0.8";
+var APP_V = "0.9";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -92,33 +92,51 @@ function render(){
       document.getElementById("warn").innerHTML=r.ok?(rows.map(function(x){return '<div class="row">'+esc(x["単元"])+'<span class="tag y">'+esc(x["確認状態"])+'</span></div>'}).join("")||'<div class="sub">いまは特にありません</div>'):'<div class="sub">読み込めませんでした（「もっと」で接続を確認）</div>';
     });
   } else if(tab==="cal"){
-    ttl.textContent="自学カレンダー"; sub.textContent="📄作成ずみ　📷写真あり　✅記録あり　（土日で空欄＝まだ作っていない日）";
-    m.innerHTML=banner()+'<div class="card"><div style="display:flex;align-items:center;justify-content:space-between"><button class="sec" id="pm" style="width:52px;padding:8px">◀</button><div class="h" id="mt" style="margin:0"></div><button class="sec" id="nm" style="width:52px;padding:8px">▶</button></div><div id="cg" style="margin-top:10px"></div></div><div class="card" id="cd"><div class="sub">日付をタップすると、くわしく出ます</div></div>';
-    var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);var st={made:[],photos:[],records:[]};
+    ttl.textContent="自学カレンダー"; sub.textContent="自学は『休みの日』だけ。休みで未作成の日は赤い点線";
+    m.innerHTML=banner()+'<div class="card"><div style="display:flex;align-items:center;justify-content:space-between"><button class="sec" id="pm" style="width:52px;padding:8px">◀</button><div class="h" id="mt" style="margin:0"></div><button class="sec" id="nm" style="width:52px;padding:8px">▶</button></div><div id="cg" style="margin-top:10px"></div><div class="sub" style="margin-top:8px">休＝土日・祝日・休校などの休みの日　📄作成ずみ　📷写真　✅記録</div></div><div class="card" id="cd"><div class="sub">日付をタップすると、くわしく出ます</div></div>';
+    var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);var st={made:[],photos:[],records:[]},evs={},calOk=null;
     function ymd(y,mo,d){return y+"-"+("0"+(mo+1)).slice(-2)+"-"+("0"+d).slice(-2)}
+    var OFF=/休校|休み|代休|振替休|休業|県民の日/;
+    function isOff(k,w){if(w==0||w==6)return true;return (evs[k]||[]).some(function(e){return e.kind==="holiday"||OFF.test(e.title)})}
     function grid(){
       var y=cur.getFullYear(),mo=cur.getMonth(),first=new Date(y,mo,1).getDay(),days=new Date(y,mo+1,0).getDate(),t=today();
       document.getElementById("mt").textContent=y+"年"+(mo+1)+"月";
       var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px">'+["日","月","火","水","木","金","土"].map(function(w,i){return '<div style="color:'+(i==0?"var(--red)":i==6?"var(--blue)":"var(--sub)")+';font-weight:800">'+w+'</div>'}).join("");
       for(var i=0;i<first;i++)h+="<div></div>";
       for(var d=1;d<=days;d++){
-        var k=ymd(y,mo,d),w=(first+d-1)%7,mk=st.made.indexOf(k)>=0,ph=st.photos.indexOf(k)>=0,rc=st.records.indexOf(k)>=0,we=(w==0||w==6);
-        var bd=k===t?"2px solid var(--blue)":(we&&!mk?"1px dashed #f2a099":"1px solid #eee");
-        h+='<div data-k="'+k+'" style="border:'+bd+';border-radius:8px;padding:3px 0;min-height:52px;background:'+(mk?"#e8f0fe":"#fff")+'"><div style="font-weight:800;color:'+(w==0?"var(--red)":w==6?"var(--blue)":"var(--ink)")+'">'+d+'</div><div style="font-size:11px;line-height:1.2">'+(mk?"📄":"")+(ph?"📷":"")+(rc?"✅":"")+((we&&!mk&&k<=t)?'<span style="color:#d93025">−</span>':"")+'</div></div>';
+        var k=ymd(y,mo,d),w=(first+d-1)%7,off=isOff(k,w),mk=st.made.indexOf(k)>=0,ph=st.photos.indexOf(k)>=0,rc=st.records.indexOf(k)>=0;
+        var bd=k===t?"2px solid var(--blue)":(off&&!mk?"1px dashed #f2a099":"1px solid #eee");
+        var mark=off?((mk?"📄":"")+(ph?"📷":"")+(rc?"✅":"")+(!mk?'<span style="color:#d93025;font-weight:800">休</span>':"")):"";
+        h+='<div data-k="'+k+'" data-w="'+w+'" style="border:'+bd+';border-radius:8px;padding:3px 0;min-height:52px;background:'+(off&&mk?"#e8f0fe":"#fff")+'"><div style="font-weight:800;color:'+(w==0?"var(--red)":w==6?"var(--blue)":"var(--ink)")+'">'+d+'</div><div style="font-size:11px;line-height:1.2">'+mark+'</div></div>';
       }
       document.getElementById("cg").innerHTML=h+"</div>";
       Array.prototype.forEach.call(document.querySelectorAll("#cg [data-k]"),function(el){el.onclick=function(){
-        var k=el.getAttribute("data-k"),a=[];
-        a.push(st.made.indexOf(k)>=0?"📄 自学プリントは、作成ずみです（「答え」で見られます）":"📄 この日の自学プリントは、まだありません");
-        a.push(st.photos.indexOf(k)>=0?"📷 写真が保存されています":"📷 写真は、まだありません");
-        a.push(st.records.indexOf(k)>=0?"✅ 答え合わせの記録があります":"✅ 答え合わせの記録は、まだありません");
-        document.getElementById("cd").innerHTML='<div class="h">'+esc(k)+'</div><div style="line-height:1.9;font-size:14px">'+a.join("<br>")+'</div>';
+        var k=el.getAttribute("data-k"),w=Number(el.getAttribute("data-w")),off=isOff(k,w),a=[];
+        var es=(evs[k]||[]).filter(function(e){return !/Meet\)?$/.test(e.title)});
+        if(es.length)a.push('<b>カレンダー</b><br>'+es.slice(0,8).map(function(e){return esc((e.time?e.time+" ":"")+e.title)}).join("<br>")+(es.length>8?"<br>ほか"+(es.length-8)+"件":""));
+        if(off){
+          a.push(st.made.indexOf(k)>=0?"📄 自学プリントは、作成ずみです（「答え」で見られます）":"📄 休みの日です。自学プリントは、まだ作っていません");
+          if(st.photos.indexOf(k)>=0)a.push("📷 写真が保存されています");
+          if(st.records.indexOf(k)>=0)a.push("✅ 答え合わせの記録があります");
+        }
+        if(calOk===false)a.push('<span class="sub">（カレンダーはまだ読み込めていません）</span>');
+        document.getElementById("cd").innerHTML='<div class="h">'+esc(k)+(off?"（休みの日）":"")+'</div><div style="line-height:1.8;font-size:14px">'+(a.join("<br><br>")||'<span class="sub">予定はありません</span>')+'</div>';
       }});
     }
-    document.getElementById("pm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);grid()};
-    document.getElementById("nm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);grid()};
-    grid();
-    if(!demo){api("status").then(function(r){if(r&&r.ok){st=r;grid()}})}
+    function load(){
+      grid();
+      if(demo)return;
+      var y=cur.getFullYear(),mo=cur.getMonth(),nx=new Date(y,mo+1,1);
+      api("status").then(function(r){if(r&&r.ok){st=r;grid()}});
+      api("calendar",{from:ymd(y,mo,1),to:ymd(nx.getFullYear(),nx.getMonth(),1)}).then(function(r){
+        calOk=!!(r&&r.ok);
+        if(r&&r.ok){(r.events||[]).forEach(function(e){(evs[e.date]=evs[e.date]||[]).push(e)})}
+        grid();
+      });
+    }
+    document.getElementById("pm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);load()};
+    document.getElementById("nm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);load()};
+    load();
   } else if(tab==="ans"){
     ttl.textContent="自学の答え"; sub.textContent="保護者用（奏祐には見せません）";
     m.innerHTML=banner()+'<div class="card" id="al">読み込み中…</div><div id="av"></div>';
