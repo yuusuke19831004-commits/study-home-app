@@ -29,7 +29,7 @@ button.sec{background:#e8eaed;color:var(--ink)}button:disabled{opacity:.45}
 .mk button.on0{background:var(--blue);border-color:var(--blue);color:#fff}.mk button.on1{background:var(--yel);border-color:var(--yel);color:#3c2e00}.mk button.on2{background:var(--red);border-color:var(--red);color:#fff}
 textarea,input{font:inherit;width:100%;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:16px}
 nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;display:flex;padding:6px 0 calc(env(safe-area-inset-bottom) + 6px)}
-nav a{flex:1;text-align:center;font-size:11px;color:var(--sub);padding:4px 0}nav a b{display:block;font-size:21px}nav a.on{color:var(--blue);font-weight:800}
+nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav a b{display:block;font-size:21px}nav a.on{color:var(--blue);font-weight:800}
 .banner{background:#fff4e5;border:1px solid #f9ab00;border-radius:12px;padding:10px 12px;font-size:13px;color:#5f4300}
 </style>
 </head>
@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:11px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "0.7";
+var APP_V = "0.8";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -77,7 +77,7 @@ function tagOf(s){return /要確認|注意/.test(s)?"y":/満点|OK|済/.test(s)?
 function banner(){return demo?'<div class="banner">デモ表示です（サンプルの数字。まだ本物のデータにつながっていません）</div>':""}
 
 function nav(){
-  var t=[["home","🏠","ホーム"],["ans","📖","答え"],["und","📊","理解度"],["rec","📝","記録"],["pho","📷","写真"],["more","⋯","もっと"]];
+  var t=[["home","🏠","ホーム"],["cal","📅","予定"],["ans","📖","答え"],["und","📊","理解度"],["rec","📝","記録"],["pho","📷","写真"],["more","⋯","もっと"]];
   document.getElementById("nav").innerHTML=t.map(function(x){return '<a href="#" data-t="'+x[0]+'" class="'+(tab===x[0]?"on":"")+'"><b>'+x[1]+'</b>'+x[2]+'</a>'}).join("");
   Array.prototype.forEach.call(document.querySelectorAll("nav a"),function(a){a.onclick=function(e){e.preventDefault();tab=a.getAttribute("data-t");render()}});
 }
@@ -91,6 +91,34 @@ function render(){
       var rows=(r.rows||[]).filter(function(x){return /要確認/.test(x["確認状態"])});
       document.getElementById("warn").innerHTML=r.ok?(rows.map(function(x){return '<div class="row">'+esc(x["単元"])+'<span class="tag y">'+esc(x["確認状態"])+'</span></div>'}).join("")||'<div class="sub">いまは特にありません</div>'):'<div class="sub">読み込めませんでした（「もっと」で接続を確認）</div>';
     });
+  } else if(tab==="cal"){
+    ttl.textContent="自学カレンダー"; sub.textContent="📄作成ずみ　📷写真あり　✅記録あり　（土日で空欄＝まだ作っていない日）";
+    m.innerHTML=banner()+'<div class="card"><div style="display:flex;align-items:center;justify-content:space-between"><button class="sec" id="pm" style="width:52px;padding:8px">◀</button><div class="h" id="mt" style="margin:0"></div><button class="sec" id="nm" style="width:52px;padding:8px">▶</button></div><div id="cg" style="margin-top:10px"></div></div><div class="card" id="cd"><div class="sub">日付をタップすると、くわしく出ます</div></div>';
+    var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);var st={made:[],photos:[],records:[]};
+    function ymd(y,mo,d){return y+"-"+("0"+(mo+1)).slice(-2)+"-"+("0"+d).slice(-2)}
+    function grid(){
+      var y=cur.getFullYear(),mo=cur.getMonth(),first=new Date(y,mo,1).getDay(),days=new Date(y,mo+1,0).getDate(),t=today();
+      document.getElementById("mt").textContent=y+"年"+(mo+1)+"月";
+      var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px">'+["日","月","火","水","木","金","土"].map(function(w,i){return '<div style="color:'+(i==0?"var(--red)":i==6?"var(--blue)":"var(--sub)")+';font-weight:800">'+w+'</div>'}).join("");
+      for(var i=0;i<first;i++)h+="<div></div>";
+      for(var d=1;d<=days;d++){
+        var k=ymd(y,mo,d),w=(first+d-1)%7,mk=st.made.indexOf(k)>=0,ph=st.photos.indexOf(k)>=0,rc=st.records.indexOf(k)>=0,we=(w==0||w==6);
+        var bd=k===t?"2px solid var(--blue)":(we&&!mk?"1px dashed #f2a099":"1px solid #eee");
+        h+='<div data-k="'+k+'" style="border:'+bd+';border-radius:8px;padding:3px 0;min-height:52px;background:'+(mk?"#e8f0fe":"#fff")+'"><div style="font-weight:800;color:'+(w==0?"var(--red)":w==6?"var(--blue)":"var(--ink)")+'">'+d+'</div><div style="font-size:11px;line-height:1.2">'+(mk?"📄":"")+(ph?"📷":"")+(rc?"✅":"")+((we&&!mk&&k<=t)?'<span style="color:#d93025">−</span>':"")+'</div></div>';
+      }
+      document.getElementById("cg").innerHTML=h+"</div>";
+      Array.prototype.forEach.call(document.querySelectorAll("#cg [data-k]"),function(el){el.onclick=function(){
+        var k=el.getAttribute("data-k"),a=[];
+        a.push(st.made.indexOf(k)>=0?"📄 自学プリントは、作成ずみです（「答え」で見られます）":"📄 この日の自学プリントは、まだありません");
+        a.push(st.photos.indexOf(k)>=0?"📷 写真が保存されています":"📷 写真は、まだありません");
+        a.push(st.records.indexOf(k)>=0?"✅ 答え合わせの記録があります":"✅ 答え合わせの記録は、まだありません");
+        document.getElementById("cd").innerHTML='<div class="h">'+esc(k)+'</div><div style="line-height:1.9;font-size:14px">'+a.join("<br>")+'</div>';
+      }});
+    }
+    document.getElementById("pm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);grid()};
+    document.getElementById("nm").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);grid()};
+    grid();
+    if(!demo){api("status").then(function(r){if(r&&r.ok){st=r;grid()}})}
   } else if(tab==="ans"){
     ttl.textContent="自学の答え"; sub.textContent="保護者用（奏祐には見せません）";
     m.innerHTML=banner()+'<div class="card" id="al">読み込み中…</div><div id="av"></div>';
