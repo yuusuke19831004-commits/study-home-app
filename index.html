@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "1.0";
+var APP_V = "1.1";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -92,7 +92,7 @@ function render(){
       document.getElementById("warn").innerHTML=r.ok?(rows.map(function(x){return '<div class="row">'+esc(x["単元"])+'<span class="tag y">'+esc(x["確認状態"])+'</span></div>'}).join("")||'<div class="sub">いまは特にありません</div>'):'<div class="sub">読み込めませんでした（「もっと」で接続を確認）</div>';
     });
   } else if(tab==="cal"){
-    ttl.textContent="自学カレンダー"; sub.textContent="自学は『休みの日』だけ。休みで未作成の日は赤い点線";
+    ttl.textContent="奏祐カレンダー"; sub.textContent="自学は『休みの日』だけ。休みで未作成の日は赤い点線";
     m.innerHTML=banner()+'<div class="card"><div style="display:flex;align-items:center;justify-content:space-between"><button class="sec" id="pm" style="width:52px;padding:8px">◀</button><div class="h" id="mt" style="margin:0"></div><button class="sec" id="nm" style="width:52px;padding:8px">▶</button></div><div id="cg" style="margin-top:10px"></div><div class="sub" style="margin-top:8px">休＝土日・祝日・休校などの休みの日　📄作成ずみ　📷写真　✅記録</div></div><div class="card" id="cd"><div class="sub">日付をタップすると、くわしく出ます</div></div>';
     var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);var st={made:[],photos:[],records:[]},evs={},calOk=null;
     function ymd(y,mo,d){return y+"-"+("0"+(mo+1)).slice(-2)+"-"+("0"+d).slice(-2)}
