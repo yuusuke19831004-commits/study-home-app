@@ -131,7 +131,7 @@ function render(){
     };
   } else {
     ttl.textContent="もっと"; sub.textContent="接続の設定";
-    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="合言葉" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px"></div></div>';
+    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：0.2（写真タブあり）</div>';
     document.getElementById("go").onclick=function(){
       var u=document.getElementById("u").value.trim(),t=document.getElementById("t").value.trim()||cfg.token;
       LS.set("sh_url",u);LS.set("sh_token",t);LS.set("sh_who",document.getElementById("w").value.trim());
