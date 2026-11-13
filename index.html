@@ -68,7 +68,7 @@ function tagOf(s){return /要確認|注意/.test(s)?"y":/満点|OK|済/.test(s)?
 function banner(){return demo?'<div class="banner">デモ表示です（サンプルの数字。まだ本物のデータにつながっていません）</div>':""}
 
 function nav(){
-  var t=[["home","🏠","ホーム"],["und","📊","理解度"],["rec","📝","記録"],["pho","📷","写真"],["more","⋯","もっと"]];
+  var t=[["home","🏠","ホーム"],["ans","📖","答え"],["und","📊","理解度"],["rec","📝","記録"],["pho","📷","写真"],["more","⋯","もっと"]];
   document.getElementById("nav").innerHTML=t.map(function(x){return '<a href="#" data-t="'+x[0]+'" class="'+(tab===x[0]?"on":"")+'"><b>'+x[1]+'</b>'+x[2]+'</a>'}).join("");
   Array.prototype.forEach.call(document.querySelectorAll("nav a"),function(a){a.onclick=function(e){e.preventDefault();tab=a.getAttribute("data-t");render()}});
 }
@@ -81,6 +81,24 @@ function render(){
     api("understanding").then(function(r){
       var rows=(r.rows||[]).filter(function(x){return /要確認/.test(x["確認状態"])});
       document.getElementById("warn").innerHTML=r.ok?(rows.map(function(x){return '<div class="row">'+esc(x["単元"])+'<span class="tag y">'+esc(x["確認状態"])+'</span></div>'}).join("")||'<div class="sub">いまは特にありません</div>'):'<div class="sub">読み込めませんでした（「もっと」で接続を確認）</div>';
+    });
+  } else if(tab==="ans"){
+    ttl.textContent="自学の答え"; sub.textContent="保護者用（奏祐には見せません）";
+    m.innerHTML=banner()+'<div class="card" id="al">読み込み中…</div><div id="av"></div>';
+    api("answerList").then(function(r){
+      var al=document.getElementById("al");
+      if(demo){al.innerHTML='<div class="sub">デモ表示では、答えは出ません（接続すると、日付ごとの答えが出ます）</div>';return}
+      if(!r.ok){al.innerHTML='<div class="sub">読み込めませんでした</div>';return}
+      var rows=r.rows||[];
+      al.innerHTML='<div class="h">日付をえらぶ</div>'+(rows.length?rows.map(function(x,i){var w="日月火水木金土"[new Date(x.date+"T00:00:00").getDay()];return '<div class="row" data-i="'+i+'" style="cursor:pointer"><b>'+esc(x.date.slice(5).replace("-","/"))+'（'+w+'）</b><span class="tag b">答えを見る</span></div>'}).join(""):'<div class="sub">まだ答えがありません</div>');
+      Array.prototype.forEach.call(al.querySelectorAll(".row"),function(el){el.onclick=function(){
+        var x=rows[Number(el.getAttribute("data-i"))],av=document.getElementById("av");
+        av.innerHTML='<div class="card"><div class="sub">読み込み中…（少し時間がかかります）</div></div>';
+        api("answerImage",{id:x.id}).then(function(q){
+          av.innerHTML=q.ok?'<div class="card"><div class="h">'+esc(x.date)+' の答え</div><img style="width:100%;border-radius:8px" src="data:image/jpeg;base64,'+q.data+'"><div class="sub" style="margin-top:6px">拡大するときは、指で広げてください</div></div>':'<div class="card"><div class="sub">読み込めませんでした</div></div>';
+          av.scrollIntoView({behavior:"smooth"});
+        });
+      }});
     });
   } else if(tab==="und"){
     ttl.textContent="理解度"; sub.textContent="★1〜5（暫定）。単発の結果では決めません";
@@ -137,7 +155,7 @@ function render(){
     };
   } else {
     ttl.textContent="もっと"; sub.textContent="接続の設定";
-    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：0.5（プリント＋ノートをまとめて保存）</div>';
+    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：0.6（答えの画面を追加）</div>';
     document.getElementById("go").onclick=function(){
       var u=document.getElementById("u").value.trim(),t=document.getElementById("t").value.trim()||cfg.token;
       LS.set("sh_url",u);LS.set("sh_token",t);LS.set("sh_who",document.getElementById("w").value.trim());
