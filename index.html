@@ -39,6 +39,15 @@ nav a{flex:1;text-align:center;font-size:11px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
+var APP_V = "0.7";
+/* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
+(function(){
+  try{
+    fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){
+      if(j&&j.v&&j.v!==APP_V&&location.search!=="?v="+encodeURIComponent(j.v)){location.replace(location.pathname+"?v="+encodeURIComponent(j.v))}
+    }).catch(function(){});
+  }catch(e){}
+})();
 var LS = {get:function(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 var cfg = {url: LS.get("sh_url"), token: LS.get("sh_token"), who: LS.get("sh_who")};
 var demo = !(cfg.url && cfg.token);
@@ -155,7 +164,7 @@ function render(){
     };
   } else {
     ttl.textContent="もっと"; sub.textContent="接続の設定";
-    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：0.6（答えの画面を追加）</div>';
+    m.innerHTML=banner()+'<div class="card"><div class="h">接続の設定（最初の1回）</div><div class="sub">スプレッドシート側のURLと合言葉を入れます。合言葉は、このスマホの中にだけ保存されます。</div><div style="height:8px"></div><input id="u" placeholder="接続URL" value="'+esc(cfg.url)+'"><div style="height:8px"></div><input id="t" type="password" placeholder="'+(cfg.token?"保存済み（変えるときだけ入力）":"合言葉")+'" value=""><div style="height:8px"></div><input id="w" placeholder="入力者（例：パパ／あっちゃん）" value="'+esc(cfg.who)+'"><div style="height:12px"></div><button id="go">保存して接続する</button><div class="sub" id="cm" style="margin-top:8px">'+(demo?"状態：未接続（デモ表示）":"状態：接続の設定が保存されています")+'</div></div><div class="sub" style="text-align:center">画面のバージョン：'+APP_V+'（自動で更新されます）</div>';
     document.getElementById("go").onclick=function(){
       var u=document.getElementById("u").value.trim(),t=document.getElementById("t").value.trim()||cfg.token;
       LS.set("sh_url",u);LS.set("sh_token",t);LS.set("sh_who",document.getElementById("w").value.trim());
