@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "1.5";
+var APP_V = "1.6";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -185,7 +185,7 @@ function render(){
     });
   } else if(tab==="pho"){
     ttl.textContent="写真を保存"; sub.textContent="自学は『プリント＋ノート』／お知らせは今週の予定表など";
-    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">テスト</button><button class="sec" id="k3" style="flex:1.4">学校のお知らせ</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">気づき（任意）</div><div class="sub" style="margin-bottom:6px">苦手そうなところ・苦戦していたところを、気づいたときに書いてください</div><input id="pn" placeholder="例：倍の見方が苦手そう／分数で苦戦していた"></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
+    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">テスト</button><button class="sec" id="k3" style="flex:1.4">学校のお知らせ</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">気づき（任意）</div><div class="sub" style="margin-bottom:6px">苦手そうなところ・苦戦していたところを、気づいたときに書いてください</div><input id="pn" placeholder="例：倍の見方が苦手そう／分数で苦戦していた"><div style="height:8px"></div><button class="sec" id="nb">気づきだけ送る（写真なし）</button><div class="sub" id="nm" style="text-align:center;margin-top:4px"></div></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
     var kind="study",files={};
     var PARTS={study:[["print","① 自学プリント（問題）"],["note","② 自学ノート（奏祐の答え）"]],test:[["front","① テスト（表）"],["back","② テスト（裏）"]],notice:[["p1","① お知らせ（1まい目）"],["p2","② お知らせ（2まい目）"]]};
     function paint(){
@@ -200,6 +200,16 @@ function render(){
     }
     document.getElementById("k1").onclick=function(){kind="study";files={};paint()};document.getElementById("k2").onclick=function(){kind="test";files={};paint()};document.getElementById("k3").onclick=function(){kind="notice";files={};paint()};
     paint();
+    document.getElementById("nb").onclick=function(){
+      var b=this,m2=document.getElementById("nm"),t=document.getElementById("pn").value.trim();
+      if(!t){m2.textContent="気づきを書いてから押してください";return}
+      if(demo){m2.textContent="デモなので保存しません";return}
+      b.disabled=true;m2.textContent="送信中…";
+      api("addNote",{date:document.getElementById("pd").value,note:t,who:cfg.who}).then(function(r){
+        m2.textContent=r.ok?"送りました":"送れませんでした";
+        if(r.ok)document.getElementById("pn").value="";b.disabled=false;
+      },function(){m2.textContent="送れませんでした";b.disabled=false});
+    };
     document.getElementById("ps").onclick=function(){
       var btn=this,msg=document.getElementById("pm");
       if(demo){msg.textContent="デモなので保存しません（接続すると保存されます）";return}
