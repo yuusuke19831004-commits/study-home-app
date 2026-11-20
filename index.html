@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "1.4";
+var APP_V = "1.5";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -184,21 +184,21 @@ function render(){
       };
     });
   } else if(tab==="pho"){
-    ttl.textContent="写真を保存"; sub.textContent="自学は『プリント＋ノート』をいっしょに保存";
-    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">学校のテスト</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">気づき（任意）</div><div class="sub" style="margin-bottom:6px">苦手そうなところ・苦戦していたところを、気づいたときに書いてください</div><input id="pn" placeholder="例：倍の見方が苦手そう／分数で苦戦していた"></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
+    ttl.textContent="写真を保存"; sub.textContent="自学は『プリント＋ノート』／お知らせは今週の予定表など";
+    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">テスト</button><button class="sec" id="k3" style="flex:1.4">学校のお知らせ</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">気づき（任意）</div><div class="sub" style="margin-bottom:6px">苦手そうなところ・苦戦していたところを、気づいたときに書いてください</div><input id="pn" placeholder="例：倍の見方が苦手そう／分数で苦戦していた"></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
     var kind="study",files={};
-    var PARTS={study:[["print","① 自学プリント（問題）"],["note","② 自学ノート（奏祐の答え）"]],test:[["front","① テスト（表）"],["back","② テスト（裏）"]]};
+    var PARTS={study:[["print","① 自学プリント（問題）"],["note","② 自学ノート（奏祐の答え）"]],test:[["front","① テスト（表）"],["back","② テスト（裏）"]],notice:[["p1","① お知らせ（1まい目）"],["p2","② お知らせ（2まい目）"]]};
     function paint(){
       var k1=document.getElementById("k1"),k2=document.getElementById("k2");
       k1.style.background=kind==="study"?"var(--blue)":"";k1.style.color=kind==="study"?"#fff":"";
-      k2.style.background=kind==="test"?"var(--blue)":"";k2.style.color=kind==="test"?"#fff":"";
+      k2.style.background=kind==="test"?"var(--blue)":"";k2.style.color=kind==="test"?"#fff":"";var k3=document.getElementById("k3");k3.style.background=kind==="notice"?"var(--blue)":"";k3.style.color=kind==="notice"?"#fff":"";
       document.getElementById("slots").innerHTML=PARTS[kind].map(function(p){var has=!!files[p[0]];
         return '<div class="card"><div class="h">'+p[1]+(has?' ✅':'')+'</div><input type="file" accept="image/*" capture="environment" data-p="'+p[0]+'" style="display:none"><button class="'+(has?"sec":"")+'" data-c="'+p[0]+'" style="background:'+(has?"":"#188038")+'">📷 '+(has?"撮りなおす":"撮影する／写真を選ぶ")+'</button>'+(has?'<img style="width:100%;border-radius:10px;margin-top:10px" src="data:image/jpeg;base64,'+files[p[0]]+'">':"")+'</div>'}).join("");
       Array.prototype.forEach.call(document.querySelectorAll("#slots button"),function(b){b.onclick=function(){document.querySelector('#slots input[data-p="'+b.getAttribute("data-c")+'"]').click()}});
       Array.prototype.forEach.call(document.querySelectorAll("#slots input"),function(inp){inp.onchange=function(){var f=inp.files&&inp.files[0],p=inp.getAttribute("data-p");if(!f)return;shrink(f,1800).then(function(d){files[p]=d;paint()},function(){document.getElementById("pm").textContent="写真を読み込めませんでした"})}});
       document.getElementById("ps").disabled=!Object.keys(files).length;
     }
-    document.getElementById("k1").onclick=function(){kind="study";files={};paint()};document.getElementById("k2").onclick=function(){kind="test";files={};paint()};
+    document.getElementById("k1").onclick=function(){kind="study";files={};paint()};document.getElementById("k2").onclick=function(){kind="test";files={};paint()};document.getElementById("k3").onclick=function(){kind="notice";files={};paint()};
     paint();
     document.getElementById("ps").onclick=function(){
       var btn=this,msg=document.getElementById("pm");
