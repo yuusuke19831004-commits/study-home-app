@@ -39,7 +39,7 @@ nav a{flex:1;text-align:center;font-size:10px;color:var(--sub);padding:4px 0}nav
 <nav id="nav"></nav>
 <script>
 "use strict";
-var APP_V = "1.3";
+var APP_V = "1.4";
 /* 自動更新：新しい版が出ていたら、自分で読み直す（ホーム画面のアプリを入れ直さなくてよい） */
 (function(){
   try{
@@ -185,7 +185,7 @@ function render(){
     });
   } else if(tab==="pho"){
     ttl.textContent="写真を保存"; sub.textContent="自学は『プリント＋ノート』をいっしょに保存";
-    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">学校のテスト</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">ひとこと（任意）</div><input id="pn" placeholder="例：算数 がい数"></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
+    m.innerHTML=banner()+'<div class="card"><div class="h">種類</div><div style="display:flex;gap:8px"><button class="sec on" id="k1" style="flex:1">自学</button><button class="sec" id="k2" style="flex:1">学校のテスト</button></div><div style="height:10px"></div><div class="h">日付（その日のプリントの日付）</div><input id="pd" type="date" value="'+today()+'"><div style="height:10px"></div><div class="h">気づき（任意）</div><div class="sub" style="margin-bottom:6px">苦手そうなところ・苦戦していたところを、気づいたときに書いてください</div><input id="pn" placeholder="例：倍の見方が苦手そう／分数で苦戦していた"></div><div id="slots"></div><button id="ps" disabled>まとめて保存する</button><div class="sub" id="pm" style="text-align:center;margin-top:6px"></div>';
     var kind="study",files={};
     var PARTS={study:[["print","① 自学プリント（問題）"],["note","② 自学ノート（奏祐の答え）"]],test:[["front","① テスト（表）"],["back","② テスト（裏）"]]};
     function paint(){
